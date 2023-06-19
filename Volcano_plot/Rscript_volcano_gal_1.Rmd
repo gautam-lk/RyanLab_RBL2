@@ -1,0 +1,141 @@
+---
+title: "Volcano_plot"
+author: "Lalit K. Gautam"
+date: "2022-11-28"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load packages------------------------------------------------------------
+
+```{r}
+
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+library(matrixStats)
+library(tidyverse)
+```
+# Import data  ------------------------------------------------------------
+
+```{r}
+
+# Auto-detect header by checking if P value column is numeric or not
+first_line <- read.delim('Notch_100_sig.tabular.txt', header = FALSE, nrow = 1)
+first_pvalue <- first_line[, 7]
+if (is.numeric(first_pvalue)) {
+  print("No header row detected")
+  results <- read.delim('Notch_100_sig.tabular.txt', header = FALSE)
+} else {
+  print("Header row detected")
+  results <- read.delim('Notch_100_sig.tabular.txt', header = TRUE)
+}
+```
+
+
+
+
+# Format data  ------------------------------------------------------------
+```{r}
+# Create columns from the column numbers specified
+results <- results %>% mutate(fdr = .[[8]],
+                              pvalue = .[[7]],
+                              logfc = .[[4]],
+                              labels = .[[2]])
+
+# Get names for legend
+down <- unlist(strsplit('Down,Not Sig,Up', split = ","))[1]
+notsig <- unlist(strsplit('Down,Not Sig,Up', split = ","))[2]
+up <- unlist(strsplit('Down,Not Sig,Up', split = ","))[3]
+
+# Set colours
+colours <- setNames(c("cornflowerblue", "grey", "firebrick"), c(down, notsig, up))
+
+# Create significant (sig) column
+results <- mutate(results, sig = case_when(
+                                fdr < 0.05 & logfc > 0.0 ~ up,
+                                fdr < 0.05 & logfc < -0.0 ~ down,
+                                TRUE ~ notsig))
+```
+
+
+
+
+# Specify genes to label --------------------------------------------------
+
+```{r}
+# Get top genes by P value
+top <- slice_min(results, order_by = pvalue, n = 20)
+
+# Extract into vector
+toplabels <- pull(top, labels)
+
+# Label just the top genes in results table
+results <- mutate(results, labels = ifelse(labels %in% toplabels, labels, ""))
+
+```
+
+# Create plot -------------------------------------------------------------
+
+# Open file to save plot as PDF
+```{r}
+pdf("volcano_plot.pdf")
+png("volcano_plot.png")
+```
+
+
+# Set up base plot
+```{r}
+p <- ggplot(data = results, aes(x = logfc, y = -log10(pvalue))) +
+    geom_point(aes(colour = sig)) +
+    scale_color_manual(values = colours) +
+    theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.key = element_blank())
+```
+
+
+# Add gene labels
+```{r}
+p <- p + geom_text_repel(data = filter(results, labels != ""), aes(label = labels),
+                         min.segment.length = 0,
+                         max.overlaps = Inf,
+                         show.legend = FALSE)
+
+
+```
+
+
+
+
+
+# Set legend title
+```{r}
+p <- p + theme(legend.title = element_blank())
+
+```
+
+# Print plot
+```{r}
+print(p)
+
+```
+
+# Close PDF graphics device
+dev.off()
+
+
+# R and Package versions -------------------------------------------------
+sessionInfo()
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

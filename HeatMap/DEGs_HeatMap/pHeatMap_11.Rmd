@@ -1,0 +1,45 @@
+---
+---
+title: "pHeatMap"
+author: "Lalit K. Gautam"
+date: "2022-11-27"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+knitr::opts_chunk$set(fig.width = 6, fig.height = 240)
+```
+
+```{r}
+library(pheatmap)
+library(grid)
+library(ggplot2)
+library(matrixStats)
+library(tidyverse)
+data <-read.csv('Data_sig_only.csv')
+dim(data)
+head(data)
+data1 <- as.matrix(data[,-1])
+rownames(data1) <- data[,1]
+pheatmap(data1)
+pheatmap(log2(data1 +1), scale = 'row')
+pheatmap(log2(data1 +1), scale = 'row', row.names = TRUE)
+pheatmap(log2(data1 +1), scale = 'row', row.names = TRUE, treeheight_row = 20, cutree_rows = 6)
+echo = FALSE
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
